@@ -1,4 +1,5 @@
 package com.jiguang.jverify;
+import cn.jiguang.api.utils.JCollectionAuth;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -96,7 +97,9 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
             setup(call, result);
         } else if (call.method.equals("setDebugMode")) {
             setDebugMode(call, result);
-        } else if (call.method.equals("isInitSuccess")) {
+        } else if (call.method.equals("setCollectionAuth")) {
+            setCollectionAuth(call, result);
+        }else if (call.method.equals("isInitSuccess")) {
             isInitSuccess(call, result);
         } else if (call.method.equals("checkVerifyEnable")) {
             checkVerifyEnable(call, result);
@@ -193,6 +196,18 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
             JVerificationInterface.setDebugMode((Boolean) enable);
         }
 
+        Map<String, Object> map = new HashMap<>();
+        map.put(j_result_key, enable);
+        runMainThread(map, result, null);
+    }
+
+    /**
+     * SDK合规授权
+     */
+    private void setCollectionAuth(MethodCall call, Result result) {
+        Log.d(TAG, "Action - setCollectionAuth:");
+        Object enable = getValueByKey(call, "auth");
+        JCollectionAuth.setAuth(context,(Boolean)enable);
         Map<String, Object> map = new HashMap<>();
         map.put(j_result_key, enable);
         runMainThread(map, result, null);
@@ -296,7 +311,7 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
 
         JVerificationInterface.getToken(context, timeOut, new VerifyListener() {
             @Override
-            public void onResult(int code, String content, String operator) {
+            public void onResult(final int code, final String content, final String operator, final JSONObject operatorReturn) {
 
                 if (code == 2000) {//code: 返回码，2000代表获取成功，其他为失败
                     Log.d(TAG, "token=" + content + ", operator=" + operator);
@@ -334,16 +349,16 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
 
         JVerificationInterface.preLogin(context, timeOut, new PreLoginListener() {
             @Override
-            public void onResult(int code, String message) {
+            public void onResult(final int code, final String content, final JSONObject operatorReturn) {
 
                 if (code == 7000) {//code: 返回码，7000代表获取成功，其他为失败，详见错误码描述
-                    Log.d(TAG, "verify success, message =" + message);
+                    Log.d(TAG, "verify success, message =" + content);
                 } else {
-                    Log.e(TAG, "verify fail，code=" + code + ", message =" + message);
+                    Log.e(TAG, "verify fail，code=" + code + ", message =" + content);
                 }
                 Map<String, Object> map = new HashMap<>();
                 map.put(j_code_key, code);
-                map.put(j_msg_key, message);
+                map.put(j_msg_key, content);
 
                 runMainThread(map, result, null);
             }
@@ -400,7 +415,7 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
 
         JVerificationInterface.loginAuth(context, settings, new VerifyListener() {
             @Override
-            public void onResult(int code, String content, String operator) {
+            public void onResult(final int code, final String content, final String operator, JSONObject operatorReturn) {
                 if (code == 6000) {
                     Log.d(TAG, "code=" + code + ", token=" + content + " ,operator=" + operator);
                 } else {
@@ -629,6 +644,9 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
 
         Object privacyItem = valueForKey(uiconfig, "privacyItem");
 
+        Object setIsPrivacyViewDarkMode = valueForKey(uiconfig, "setIsPrivacyViewDarkMode");
+
+
         /************* 状态栏 ***************/
         if (statusBarColorWithNav != null) {
             builder.setStatusBarColorWithNav((Boolean) statusBarColorWithNav);
@@ -822,6 +840,7 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
             builder.setLogBtnOffsetX((Integer) logBtnOffsetX);
         }
         if (logBtnBottomOffsetY != null) {
+            builder.setLogoOffsetY(-1);
             builder.setLogBtnBottomOffsetY((Integer) logBtnBottomOffsetY);
         }
         if (logBtnWidth != null) {
@@ -985,6 +1004,75 @@ public class JverifyPlugin implements FlutterPlugin, MethodCallHandler {
                 builder.setDialogTheme((int) width, (int) height, (int) offsetCenterX, (int) offsetCenterY, (Boolean) isBottom);
 
             }
+        }
+
+        Object privacyCheckDialogConfig = valueForKey(uiconfig, "privacyCheckDialogConfig");
+
+        /************** 协议的二次弹窗配置 ***************/
+        if (privacyCheckDialogConfig != null) {
+            Map privacyCheckDialogConfigMap = (Map) privacyCheckDialogConfig;
+            Object enablePrivacyCheckDialog = valueForKey(privacyCheckDialogConfigMap, "enablePrivacyCheckDialog");
+            if ((Boolean) enablePrivacyCheckDialog) {
+                Object width = valueForKey(privacyCheckDialogConfigMap, "width");
+                Object height = valueForKey(privacyCheckDialogConfigMap, "height");
+                Object offsetX = valueForKey(privacyCheckDialogConfigMap, "offsetX");
+                Object offsetY = valueForKey(privacyCheckDialogConfigMap, "offsetY");
+                Object gravity = valueForKey(privacyCheckDialogConfigMap, "gravity");
+
+                if(width !=null){
+                    builder.setPrivacyCheckDialogWidth((int) width);
+                }
+                if(height !=null) {
+                    builder.setPrivacyCheckDialogHeight((int) height);
+                }
+                if(offsetX !=null) {
+                    builder.setPrivacyCheckDialogOffsetX((int) offsetX);
+                }
+                if(offsetX !=null) {
+                    builder.setPrivacyCheckDialogOffsetY((int) offsetY);
+                }
+                if(gravity !=null) {
+                    builder.setprivacyCheckDialogGravity(getAlignmentFromString((String) gravity));
+                }
+                Object titleTextSize = valueForKey(privacyCheckDialogConfigMap, "titleTextSize");
+
+                if(titleTextSize !=null) {
+                    builder.setPrivacyCheckDialogTitleTextSize(exchangeObject(titleTextSize));
+                }
+
+                Object titleTextColor = valueForKey(privacyCheckDialogConfigMap, "titleTextColor");
+                Object contentTextSize = valueForKey(privacyCheckDialogConfigMap, "contentTextSize");
+                Object logBtnImgPath = valueForKey(privacyCheckDialogConfigMap, "logBtnImgPath");
+                Object logBtnTextColor_dialog = valueForKey(privacyCheckDialogConfigMap, "logBtnTextColor");
+
+                builder.enablePrivacyCheckDialog(true);
+
+                if(titleTextColor != null){
+                    builder.setPrivacyCheckDialogTitleTextColor(exchangeObject(titleTextColor));
+                }
+                Object gravity_privacyCheckDialog = valueForKey(privacyCheckDialogConfigMap, "gravity");
+                if(gravity_privacyCheckDialog != null){
+                    builder.setPrivacyCheckDialogContentTextGravity(getAlignmentFromString((String) gravity_privacyCheckDialog));
+                }
+                if(contentTextSize != null){
+                    builder.setPrivacyCheckDialogContentTextSize(exchangeObject(contentTextSize));
+                }
+
+                if(logBtnImgPath != null){
+                    int res_id_logBtnImgPath = getResourceByReflect((String) logBtnImgPath);
+                    if (res_id_logBtnImgPath > 0) {
+                        builder.setPrivacyCheckDialogLogBtnImgPath((String) logBtnImgPath);
+                    }
+                }
+                if (logBtnTextColor_dialog != null){
+                    builder.setPrivacyCheckDialoglogBtnTextColor(exchangeObject(logBtnTextColor_dialog));
+                }
+            }
+        }
+    
+        /************** 协议页面是否支持暗黑模式 ***************/
+        if (setIsPrivacyViewDarkMode != null) {
+            builder.setIsPrivacyViewDarkMode((Boolean)setIsPrivacyViewDarkMode);
         }
     }
 

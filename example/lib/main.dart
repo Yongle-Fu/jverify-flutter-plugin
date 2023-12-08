@@ -292,8 +292,9 @@ class _MyAppState extends State<MyApp> {
         JVUIConfig uiConfig = JVUIConfig();
         // uiConfig.authBGGifPath = "main_gif";
         // uiConfig.authBGVideoPath="main_vi";
-        uiConfig.authBGVideoPath="http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
-        uiConfig.authBGVideoImgPath="main_v_bg";
+        uiConfig.authBGVideoPath =
+            "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
+        uiConfig.authBGVideoImgPath = "main_v_bg";
 
         //uiConfig.navHidden = true;
         uiConfig.navColor = Colors.red.value;
@@ -340,12 +341,13 @@ class _MyAppState extends State<MyApp> {
         uiConfig.privacyHintToast =
             true; //only android 设置隐私条款不选中时点击登录按钮默认显示toast。
 
-        uiConfig.privacyState = true; //设置默认勾选
+        uiConfig.privacyState = false; //设置默认勾选
         uiConfig.privacyCheckboxSize = 20;
         uiConfig.checkedImgPath = "check_image"; //图片必须存在
         uiConfig.uncheckedImgPath = "uncheck_image"; //图片必须存在
         uiConfig.privacyCheckboxInCenter = true;
-        uiConfig.privacyCheckboxHidden = true;
+        uiConfig.privacyCheckboxHidden = false;
+        uiConfig.isAlertPrivacyVc = true;
 
         //uiConfig.privacyOffsetX = isiOS ? (20 + uiConfig.privacyCheckboxSize) : null;
         uiConfig.privacyOffsetY = 15; // 距离底部距离
@@ -365,7 +367,6 @@ class _MyAppState extends State<MyApp> {
           JVPrivacy("自定义协议3", "http://www.baidu.com", separator: "、"),
           JVPrivacy("自定义协议4", "http://www.baidu.com", separator: "、"),
           JVPrivacy("自定义协议5", "http://www.baidu.com", separator: "、")
-
         ];
         uiConfig.textVerAlignment = 1;
         //uiConfig.privacyWithBookTitleMark = true;
@@ -393,23 +394,53 @@ class _MyAppState extends State<MyApp> {
         uiConfig.privacyNavTitleTitle = "ios lai le"; //only ios
         uiConfig.privacyNavReturnBtnImage = "back"; //图片必须存在;
 
+        //协议二次弹窗内容设置 -iOS
+        uiConfig.agreementAlertViewTitleTexSize = 18;
+        uiConfig.agreementAlertViewTitleTextColor = Colors.red.value;
+        uiConfig.agreementAlertViewContentTextAlignment =
+            JVTextAlignmentType.center;
+        uiConfig.agreementAlertViewContentTextFontSize = 16;
+        uiConfig.agreementAlertViewLoginBtnNormalImagePath = "login_btn_normal";
+        uiConfig.agreementAlertViewLoginBtnPressedImagePath = "login_btn_press";
+        uiConfig.agreementAlertViewLoginBtnUnableImagePath = "login_btn_unable";
+        uiConfig.agreementAlertViewLogBtnTextColor = Colors.black.value;
+
+        //协议二次弹窗内容设置 -Android
+        JVPrivacyCheckDialogConfig privacyCheckDialogConfig =
+            JVPrivacyCheckDialogConfig();
+        // privacyCheckDialogConfig.width = 250;
+        // privacyCheckDialogConfig.height = 100;
+        privacyCheckDialogConfig.offsetX = 0;
+        privacyCheckDialogConfig.offsetY = 0;
+        privacyCheckDialogConfig.titleTextSize = 22;
+        privacyCheckDialogConfig.gravity = "center";
+        privacyCheckDialogConfig.titleTextColor = Colors.black.value;
+        privacyCheckDialogConfig.contentTextGravity = "left";
+        privacyCheckDialogConfig.contentTextSize = 14;
+        privacyCheckDialogConfig.logBtnImgPath = "login_btn_normal";
+        privacyCheckDialogConfig.logBtnTextColor = Colors.black.value;
+        uiConfig.privacyCheckDialogConfig = privacyCheckDialogConfig;
+
+        uiConfig.setIsPrivacyViewDarkMode = false;//协议页面是否支持暗黑模式
+
         //弹框模式
-//         JVPopViewConfig popViewConfig = JVPopViewConfig();
-//         popViewConfig.width = (screenWidth - 100.0).toInt();
-//         popViewConfig.height = (screenHeight - 150.0).toInt();
-//
-//         uiConfig.popViewConfig = popViewConfig;
+        // JVPopViewConfig popViewConfig = JVPopViewConfig();
+        // popViewConfig.width = (screenWidth - 100.0).toInt();
+        // popViewConfig.height = (screenHeight - 150.0).toInt();
+
+        // uiConfig.popViewConfig = popViewConfig;
 
         /// 添加自定义的 控件 到授权界面
         List<JVCustomWidget> widgetList = [];
 
-        final String text_widgetId = "jv_add_custom_text";// 标识控件 id
-        JVCustomWidget textWidget = JVCustomWidget(text_widgetId, JVCustomWidgetType.textView);
+        final String text_widgetId = "jv_add_custom_text"; // 标识控件 id
+        JVCustomWidget textWidget =
+            JVCustomWidget(text_widgetId, JVCustomWidgetType.textView);
         textWidget.title = "新加 text view 控件";
         textWidget.left = 20;
-        textWidget.top = 360 ;
+        textWidget.top = 360;
         textWidget.width = 200;
-        textWidget.height  = 40;
+        textWidget.height = 40;
         textWidget.backgroundColor = Colors.yellow.value;
         textWidget.isShowUnderline = true;
         textWidget.textAlignment = JVTextAlignmentType.center;
@@ -424,13 +455,14 @@ class _MyAppState extends State<MyApp> {
         });
         widgetList.add(textWidget);
 
-        final String btn_widgetId = "jv_add_custom_button";// 标识控件 id
-        JVCustomWidget buttonWidget = JVCustomWidget(btn_widgetId, JVCustomWidgetType.button);
+        final String btn_widgetId = "jv_add_custom_button"; // 标识控件 id
+        JVCustomWidget buttonWidget =
+            JVCustomWidget(btn_widgetId, JVCustomWidgetType.button);
         buttonWidget.title = "新加 button 控件";
         buttonWidget.left = 100;
         buttonWidget.top = 400;
         buttonWidget.width = 150;
-        buttonWidget.height  = 40;
+        buttonWidget.height = 40;
         buttonWidget.isShowUnderline = true;
         buttonWidget.backgroundColor = Colors.brown.value;
         //buttonWidget.btnNormalImageName = "";
@@ -473,9 +505,6 @@ class _MyAppState extends State<MyApp> {
         });
 
 
-
-
-
         /* 弹框模式
         JVPopViewConfig popViewConfig = JVPopViewConfig();
         popViewConfig.width = (screenWidth - 100.0).toInt();
@@ -516,8 +545,9 @@ class _MyAppState extends State<MyApp> {
     });
 
     jverify.setDebugMode(true); // 打开调试模式
+    jverify.setCollectionAuth(false);
     jverify.setup(
-        appKey: "a0e6ace8d5b3e0247e3f58db", //"你自己应用的 AppKey",
+        appKey: "4fcc3e237eec4c4fb804ad49", //"你自己应用的 AppKey",
         channel: "devloper-default"); // 初始化sdk,  appKey 和 channel 只对ios设置有效
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling

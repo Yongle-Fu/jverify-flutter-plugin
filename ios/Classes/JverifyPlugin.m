@@ -1,5 +1,6 @@
 #import "JverifyPlugin.h"
 #import "JVERIFICATIONService.h"
+#import "JGInforCollectionAuth.h"
 // 如果需要使用 idfa 功能所需要引入的头文件（可选）
 #import <AdSupport/AdSupport.h>
 #define UIColorFromRGB(rgbValue)  ([UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0])
@@ -40,6 +41,8 @@ NSObject<FlutterPluginRegistrar>* _jv_registrar;
         [self setup:call result:result];
     }else if([methodName isEqualToString:@"setDebugMode"]){
         [self setDebugMode:call result:result];
+    }else if([methodName isEqualToString:@"setCollectionAuth"]){
+        [self setCollectionAuth:call result:result];
     }else if([methodName isEqualToString:@"isInitSuccess"]) {
         [self isSetupClient:result];
     }else if([methodName isEqualToString:@"checkVerifyEnable"]){
@@ -108,6 +111,18 @@ NSObject<FlutterPluginRegistrar>* _jv_registrar;
     NSDictionary *arguments = call.arguments;
     NSNumber *debug = arguments[@"debug"];
     [JVERIFICATIONService setDebug:[debug boolValue]];
+}
+
+#pragma mark - 设置合规/采集授权 
+-(void)setCollectionAuth:(FlutterMethodCall*) call result:(FlutterResult)result{
+    JVLog(@"Action - setCollectionAuth::");
+    
+    NSDictionary *arguments = call.arguments;
+    __block  NSNumber *auth = arguments[@"auth"];
+    
+    [JGInforCollectionAuth  JCollectionAuth:^(JGInforCollectionAuthItems * _Nonnull authInfo) {
+        authInfo.isAuth = auth;
+    }];
 }
 
 #pragma mark - 初始化 SDK
@@ -284,7 +299,7 @@ NSObject<FlutterPluginRegistrar>* _jv_registrar;
         
         NSDictionary *dict = @{
             j_code_key:res[@"code"],
-            j_msg_key :res[@"message"] ? res[@"message"] : @""
+            j_msg_key :res[@"content"] ? res[@"content"] : @""
         };
         dispatch_async(dispatch_get_main_queue(), ^{
             result(dict);
@@ -448,7 +463,7 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
         uiconfig.authPageBackgroundImage = [UIImage imageNamed:authBackgroundImage];
     }
     
-    needStartAnim = [[self getValue:config key:@"needCloseAnim"] boolValue];
+    needStartAnim = [[self getValue:config key:@"needStartAnim"] boolValue];
     needCloseAnim = [[self getValue:config key:@"needCloseAnim"] boolValue];
     
     JVLog(@"Action - setCustomAuthorizationView:needStartAnim %d",needStartAnim);
@@ -489,8 +504,7 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
     if (navTransparent) {
         uiconfig.navTransparent = [navTransparent boolValue];
     }
-    uiconfig.navReturnHidden = NO;
-    
+
     /************** logo ***************/
     JVLayoutItem logoLayoutItem = [self getLayotItem:[self getValue:config key:@"logoVerticalLayoutItem"]];
     NSNumber *logoWidth = [self getNumberValue:config key:@"logoWidth"];
@@ -644,7 +658,7 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
     
     
     //checkbox
-    JVLayoutConstraint *box_cons_x = [JVLayoutConstraint constraintWithAttribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:JVLayoutItemPrivacy attribute:NSLayoutAttributeLeft multiplier:1 constant:-[privacyOffsetX floatValue]/2];
+    JVLayoutConstraint *box_cons_x = [JVLayoutConstraint constraintWithAttribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:JVLayoutItemPrivacy attribute:NSLayoutAttributeLeft multiplier:1 constant:-5];
     JVLayoutConstraint *box_cons_y = [JVLayoutConstraint constraintWithAttribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:JVLayoutItemPrivacy attribute:NSLayoutAttributeTop multiplier:1 constant:3];
     if (privacyCheckboxInCenter) {
         box_cons_y = [JVLayoutConstraint constraintWithAttribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:JVLayoutItemPrivacy attribute:NSLayoutAttributeCenterY multiplier:1 constant:0];
@@ -668,6 +682,9 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
     }
     
     /************** privacy ***************/
+    //隐私弹窗
+    BOOL isAlertPrivacyVc = [[self getValue:config key:@"isAlertPrivacyVc"] boolValue];
+    uiconfig.isAlertPrivacyVC = isAlertPrivacyVc;
     
     //自定义协议
     NSString *tempSting = @"";
@@ -698,7 +715,7 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
             }
             //加入name
             if ([[obj allKeys] containsObject:@"name"] ) {
-                [item addObject:[obj objectForKey:@"name"]];
+                [item addObject:[NSString stringWithFormat:@"%@%@%@",(privacyWithBookTitleMark?@"《":@""),[obj objectForKey:@"name"],(privacyWithBookTitleMark?@"》":@"")]];
                 tempSting = [tempSting stringByAppendingFormat:@"%@%@%@",(privacyWithBookTitleMark?@"《":@""),[obj objectForKey:@"name"],(privacyWithBookTitleMark?@"》":@"")];
                 
             }
@@ -745,7 +762,7 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
     
     BOOL privacyHintToast = [[self getValue:config key:@"privacyHintToast"] boolValue];
     if(privacyHintToast){
-        uiconfig.customPrivacyAlertViewBlock = ^(UIViewController *vc) {
+        uiconfig.customPrivacyAlertViewBlock = ^(UIViewController *vc , NSArray *appPrivacys,void(^loginAction)(void)) {
             UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"请点击同意协议" message:nil preferredStyle:UIAlertControllerStyleAlert];
             [alert addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:nil] ];
             [vc presentViewController:alert animated:true completion:nil];
@@ -885,6 +902,39 @@ JVLayoutConstraint *JVLayoutHeight(CGFloat height) {
     
     uiconfig.loadingConstraints = @[loadingConstraintX,loadingConstraintY,loadingConstraintW,loadingConstraintH];
     uiconfig.loadingHorizontalConstraints = uiconfig.loadingConstraints;
+    
+    /************** 协议二次弹窗样式***************/
+    
+    NSInteger agreementAlertViewTitleTexSize = [[self getValue:config key:@"agreementAlertViewTitleTexSize"] integerValue];
+    uiconfig.agreementAlertViewTitleTexFont = [UIFont systemFontOfSize:agreementAlertViewTitleTexSize];
+    
+    NSNumber *agreementAlertViewTitleTextColorInt = [self getValue:config key:@"agreementAlertViewTitleTextColor"];
+    if (agreementAlertViewTitleTextColorInt) {
+        UIColor *agreementAlertViewTitleTextColor = UIColorFromRGB([agreementAlertViewTitleTextColorInt integerValue]);
+        uiconfig.agreementAlertViewTitleTextColor = agreementAlertViewTitleTextColor;
+    }
+    
+    NSTextAlignment agreementAlertViewContentTextAlignment = [[self getValue:config key:@"agreementAlertViewContentTextAlignment"] integerValue];
+    uiconfig.agreementAlertViewContentTextAlignment = NSTextAlignmentLeft;
+    
+    NSInteger agreementAlertViewContentTextFontSize = [[self getValue:config key:@"agreementAlertViewContentTextFontSize"] integerValue];
+    uiconfig.agreementAlertViewContentTextFontSize = agreementAlertViewContentTextFontSize;
+    
+    
+    UIImage *agreementAlertViewLoginBtnNormalImage = [UIImage imageNamed:[config objectForKey:@"agreementAlertViewLoginBtnNormalImagePath"]] ? : [UIImage imageNamed:@"login_btn_normal"];
+    UIImage *agreementAlertViewLoginBtnPressedImage = [UIImage imageNamed:[config objectForKey:@"agreementAlertViewLoginBtnPressedImagePath"]] ? : [UIImage imageNamed:@"login_btn_press"];
+    UIImage *agreementAlertViewLoginBtnUnableImage = [UIImage imageNamed:[config objectForKey:@"agreementAlertViewLoginBtnUnableImagePath"]] ? : [UIImage imageNamed:@"login_btn_unable"];
+    if(agreementAlertViewLoginBtnNormalImage && agreementAlertViewLoginBtnPressedImage && agreementAlertViewLoginBtnUnableImage){
+        NSArray * agreementAlertViewLogBtnImgs =[[NSArray alloc]initWithObjects:agreementAlertViewLoginBtnNormalImage,agreementAlertViewLoginBtnPressedImage,agreementAlertViewLoginBtnUnableImage,nil];
+            uiconfig.agreementAlertViewLogBtnImgs = agreementAlertViewLogBtnImgs;
+    }
+    
+ 
+    NSNumber *agreementAlertViewLogBtnTextColorInt = [self getValue:config key:@"agreementAlertViewLogBtnTextColor"];
+    if (agreementAlertViewLogBtnTextColorInt) {
+        UIColor *agreementAlertViewLogBtnTextColor = UIColorFromRGB([agreementAlertViewLogBtnTextColorInt integerValue]);
+        uiconfig.agreementAlertViewLogBtnTextColor = agreementAlertViewLogBtnTextColor;
+    }
     
     /************** 窗口模式样式设置 ***************/
     if (popViewConfig) {
